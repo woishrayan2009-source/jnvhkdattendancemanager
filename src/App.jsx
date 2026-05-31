@@ -27,10 +27,12 @@ const LeaveTracker       = lazy(() => import('./pages/LeaveTracker'))
 function RootRedirect() {
   const { role, isLoading } = useAuth()
   if (isLoading) return <PageLoader message="Loading…" />
-  if (role === 'PRINCIPAL' || role === 'ADMIN') return <Navigate to="/principal-dashboard" replace />
-  if (role === 'HM')         return <Navigate to="/hm-dashboard" replace />
-  if (role === 'GATE_GUARD') return <Navigate to="/leave-tracker" replace />
-  // Fallback for any unexpected/unknown role — send to login
+  if (role === 'principal' || role === 'admin' || role === 'vice_principal')
+    return <Navigate to="/principal-dashboard" replace />
+  if (role === 'house_master' || role === 'associate_hm' || role === 'warden')
+    return <Navigate to="/hm-dashboard" replace />
+  if (role === 'gate_guard')
+    return <Navigate to="/leave-tracker" replace />
   return <Navigate to="/login" replace />
 }
 
@@ -59,7 +61,7 @@ export default function App() {
                 <Route
                   path="principal-dashboard"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL']}>
+                    <ProtectedRoute allowedRoles={['admin', 'vice_principal' , 'principal']}>
                       <PrincipalDashboard />
                     </ProtectedRoute>
                   }
@@ -67,7 +69,7 @@ export default function App() {
                 <Route
                   path="hm-dashboard"
                   element={
-                    <ProtectedRoute allowedRoles={['HM']}>
+                    <ProtectedRoute allowedRoles={['house_master', 'associate_hm', 'warden']}>
                       <HMDashboard />
                     </ProtectedRoute>
                   }
@@ -77,7 +79,7 @@ export default function App() {
                 <Route
                   path="mark-attendance"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden']}>
                       <MarkAttendance />
                     </ProtectedRoute>
                   }
@@ -87,7 +89,7 @@ export default function App() {
                 <Route
                   path="leaves"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM', 'GATE_GUARD']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden', 'gate_guard']}>
                       <Leaves />
                     </ProtectedRoute>
                   }
@@ -95,7 +97,7 @@ export default function App() {
                 <Route
                   path="leave-request"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden']}>
                       <LeaveRequest />
                     </ProtectedRoute>
                   }
@@ -103,7 +105,7 @@ export default function App() {
                 <Route
                   path="leave-approval"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden']}>
                       <LeaveApproval />
                     </ProtectedRoute>
                   }
@@ -111,7 +113,7 @@ export default function App() {
                 <Route
                   path="leave-tracker"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM', 'GATE_GUARD']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden', 'gate_guard']}>
                       <LeaveTracker />
                     </ProtectedRoute>
                   }
@@ -121,7 +123,7 @@ export default function App() {
                 <Route
                   path="students"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden']}>
                       <Students />
                     </ProtectedRoute>
                   }
@@ -131,7 +133,7 @@ export default function App() {
                 <Route
                   path="reports"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL', 'HM']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden']}>
                       <Reports />
                     </ProtectedRoute>
                   }
@@ -141,7 +143,7 @@ export default function App() {
                 <Route
                   path="qr-cards"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal']}>
                       <QRCards />
                     </ProtectedRoute>
                   }
@@ -149,7 +151,7 @@ export default function App() {
                 <Route
                   path="settings"
                   element={
-                    <ProtectedRoute allowedRoles={['ADMIN', 'PRINCIPAL']}>
+                    <ProtectedRoute allowedRoles={['admin', 'principal', 'vice_principal']}>
                       <Settings />
                     </ProtectedRoute>
                   }

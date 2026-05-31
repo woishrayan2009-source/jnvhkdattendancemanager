@@ -42,8 +42,11 @@ export const LEAVE_TYPES = [
 ]
 
 export const ROLES = {
-  ADMIN:      'ADMIN',
-  PRINCIPAL:  'PRINCIPAL',
-  HM:         'HM',
-  GATE_GUARD: 'GATE_GUARD',
+  ADMIN:          'admin',
+  PRINCIPAL:      'principal',
+  VICE_PRINCIPAL: 'vice_principal',
+  HM:             'house_master',
+  ASSOCIATE_HM:   'associate_hm',
+  WARDEN:         'warden',
+  GATE_GUARD:     'gate_guard',
 }

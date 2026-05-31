@@ -22,8 +22,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return (
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {    return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="p-8 bg-white text-gray-800 rounded-lg shadow-lg text-center max-w-sm w-full border border-red-200">
           <div className="mx-auto w-12 h-12 flex items-center justify-center bg-red-100 rounded-full mb-4">
