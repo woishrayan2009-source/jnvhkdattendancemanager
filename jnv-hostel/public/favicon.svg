@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#1e3a5f"/>
+  <!-- School building silhouette -->
+  <rect x="8" y="14" width="16" height="12" rx="1" fill="white" opacity="0.9"/>
+  <rect x="13" y="18" width="6" height="8" rx="0.5" fill="#1e3a5f"/>
+  <polygon points="16,4 5,14 27,14" fill="white" opacity="0.9"/>
+  <!-- Flagpole -->
+  <rect x="15.5" y="8" width="1" height="6" fill="#f0bd44"/>
+  <rect x="16.5" y="8.5" width="4" height="2.5" fill="#f0bd44"/>
+</svg>

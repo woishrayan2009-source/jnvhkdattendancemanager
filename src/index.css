@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+/* ============================================================
+   JNV HKD Design System — Global Styles
+   ============================================================ */
+
+:root {
+  --nvs-navy:       #1a3a5c;
+  --nvs-navy-dark:  #0f2440;
+  --nvs-gold:       #d97706;
+  --nvs-green:      #059669;
+  --nvs-red:        #dc2626;
+  --house-nilgiri:  #16a34a;
+  --house-arawali:  #2563eb;
+  --house-shiwalik: #dc2626;
+  --house-udaygiri: #d97706;
+}
+
+/* Base */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================================
+   Animation utilities (used without Tailwind animate plugin)
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes zoomIn95 {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.animate-in {
+  animation-duration: 200ms;
+  animation-fill-mode: both;
+  animation-timing-function: ease-out;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn95;
+}
+
+.slide-in-from-right {
+  animation-name: slideInFromRight;
+  animation-duration: 300ms;
+}
+
+/* ============================================================
+   Print styles for QR cards and reports
+   ============================================================ */
+@media print {
+  body {
+    background: white;
+    font-size: 10pt;
+  }
+
+  /* Hide non-printable elements */
+  header, aside, nav, .no-print {
+    display: none !important;
+  }
+
+  main {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* ============================================================
+   QR Scanner override (html5-qrcode default styles reset)
+   ============================================================ */
+#qr-reader {
+  border: none !important;
+  width: 100% !important;
+}
+
+#qr-reader > section {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+#qr-reader img {
+  display: none;
+}
+
+/* ============================================================
+   Custom select styling
+   ============================================================ */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px !important;
+}
+
+/* ============================================================
+   Focus visible (accessibility)
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--nvs-navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Safe area insets for notch phones (PWA installed)
+   ============================================================ */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }

@@ -1,0 +1,42 @@
+{
+  "name": "JNV Haridwar Attendance System",
+  "short_name": "JNV HKD",
+  "description": "Offline-first attendance management for Jawahar Navodaya Vidyalaya, Haridwar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f2440",
+  "theme_color": "#1a3a5c",
+  "orientation": "portrait-primary",
+  "categories": ["education", "productivity"],
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mark Attendance",
+      "short_name": "Attendance",
+      "description": "Open attendance marking",
+      "url": "/mark-attendance",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Record Leave",
+      "short_name": "Leave",
+      "description": "Record student leave",
+      "url": "/leaves",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

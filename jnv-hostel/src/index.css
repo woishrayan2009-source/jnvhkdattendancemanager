@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base resets ────────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none; /* prevent pull-to-refresh in PWA */
+  }
+
+  /* Safe area insets for notched phones / PWA display mode */
+  #root {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-navy-500 rounded;
+  }
+
+  /* Scrollbar (Webkit) */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400; }
+}
+
+/* ─── Component utilities ────────────────────────────────────────────────────── */
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-white rounded-xl border border-slate-100 shadow-card;
+  }
+
+  /* Page header */
+  .page-header {
+    @apply flex items-center justify-between mb-6 gap-4;
+  }
+
+  .page-title {
+    @apply text-xl font-bold text-navy-800;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-slate-500 mt-0.5;
+  }
+
+  /* Status pill */
+  .status-pill {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm
+           placeholder-slate-400 shadow-sm
+           focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 focus:outline-none
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+
+  /* Attendance tap cell */
+  .att-cell {
+    @apply flex items-center justify-between px-4 py-3
+           border-b border-slate-50 last:border-0
+           active:bg-slate-50 transition-colors cursor-pointer select-none;
+  }
+}
+
+/* ─── PWA install prompt animation ──────────────────────────────────────────── */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.pwa-install-banner {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* ─── Sync badge pulse ────────────────────────────────────────────────────────── */
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(217,119,6,0); }
+}
+
+.sync-pulse { animation: pulse-amber 2s infinite; }
