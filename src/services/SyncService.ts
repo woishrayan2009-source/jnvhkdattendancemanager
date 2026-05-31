@@ -19,32 +19,45 @@ export class SyncService {
   static init() {
     window.addEventListener('online', () => {
       this.notify();
-      this.sync();
+      this.syncIfAuthenticated();
     });
     window.addEventListener('offline', () => {
       this.notify();
     });
-    if (navigator.onLine) {
-      this.sync();
-    }
+    // Do NOT call sync here — wait for auth confirmation
+  }
+
+  static async syncIfAuthenticated() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await this.sync();
   }
 
   static async getCurrentUserRole() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data } = await supabase.from('staff').select('role').eq('id', user.id).single();
+    const { data } = await supabase
+      .from('staff')
+      .select('role')
+      .eq('id', user.id)
+      .single();
     return data?.role;
   }
 
   static async sync() {
     if (this.isSyncing || !navigator.onLine) return;
+
+    // Auth check before syncing
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     this.isSyncing = true;
     this.notify();
 
     try {
       const role = await this.getCurrentUserRole();
       const tables = [
-        'houses', 'hostels', 'staff', 'students', 
+        'houses', 'hostels', 'staff', 'students',
         'attendance_records', 'leave_requests'
       ];
 
@@ -59,30 +72,41 @@ export class SyncService {
     }
   }
 
-  static async syncTable(tableName: string, currentUserRole: string | null | undefined) {
+  static async syncTable(
+    tableName: string,
+    currentUserRole: string | null | undefined
+  ) {
     // 1. Push dirty records
     // @ts-ignore
-    const dirtyRecords = await db.table(tableName).filter(r => r.dirty === true).toArray();
-    
+    const dirtyRecords = await db.table(tableName)
+      .filter((r: any) => r.dirty === true)
+      .toArray();
+
     if (dirtyRecords.length > 0) {
-      const toSync = dirtyRecords.map(r => {
+      const toSync = dirtyRecords.map((r: any) => {
         const { dirty, synced_at, ...rest } = r;
         return rest;
       });
 
       const { error } = await supabase.from(tableName).upsert(toSync);
-      
+
       if (!error) {
         const now = new Date().toISOString();
         for (const record of dirtyRecords) {
           // @ts-ignore
-          await db.table(tableName).update(record.id, { dirty: false, synced_at: now });
+          await db.table(tableName).update(record.id, {
+            dirty: false,
+            synced_at: now,
+          });
         }
       }
     }
 
     // 2. Pull remote changes
-    const syncLog = await db.sync_log.where('table_name').equals(tableName).first();
+    const syncLog = await db.sync_log
+      .where('table_name')
+      .equals(tableName)
+      .first();
     const lastSyncAt = syncLog?.last_sync_at || '1970-01-01T00:00:00Z';
 
     const { data: remoteRecords, error: pullError } = await supabase
@@ -95,12 +119,15 @@ export class SyncService {
     for (const remote of remoteRecords) {
       // @ts-ignore
       const local = await db.table(tableName).get(remote.id);
-      
+
       if (local && local.dirty === true) {
-        // Conflict resolution: Principal role wins, else latest updated_at wins
+        // Conflict resolution: principal/admin wins, else latest updated_at wins
         let localWins = false;
-        
-        if (currentUserRole === 'PRINCIPAL') {
+
+        if (
+          currentUserRole === 'principal' ||
+          currentUserRole === 'admin'
+        ) {
           localWins = true;
         } else {
           const localTime = new Date(local.updated_at || 0).getTime();
@@ -112,18 +139,31 @@ export class SyncService {
 
         if (!localWins) {
           // @ts-ignore
-          await db.table(tableName).put({ ...remote, dirty: false, synced_at: new Date().toISOString() });
+          await db.table(tableName).put({
+            ...remote,
+            dirty: false,
+            synced_at: new Date().toISOString(),
+          });
         }
       } else {
         // @ts-ignore
-        await db.table(tableName).put({ ...remote, dirty: false, synced_at: new Date().toISOString() });
+        await db.table(tableName).put({
+          ...remote,
+          dirty: false,
+          synced_at: new Date().toISOString(),
+        });
       }
     }
 
-    // 3. Update sync_log locally and remote
+    // 3. Update sync_log
     const nowStr = new Date().toISOString();
     if (syncLog) {
-      await db.sync_log.update(syncLog.id, { last_sync_at: nowStr, status: 'SUCCESS', updated_at: nowStr, dirty: false });
+      await db.sync_log.update(syncLog.id, {
+        last_sync_at: nowStr,
+        status: 'SUCCESS',
+        updated_at: nowStr,
+        dirty: false,
+      });
     } else {
       await db.sync_log.add({
         id: crypto.randomUUID(),
@@ -133,18 +173,17 @@ export class SyncService {
         created_at: nowStr,
         updated_at: nowStr,
         dirty: false,
-        synced_at: nowStr
+        synced_at: nowStr,
       });
     }
 
-    // Log every sync event to sync_log table in Supabase
     await supabase.from('sync_log').upsert({
       id: syncLog?.id || crypto.randomUUID(),
       table_name: tableName,
       last_sync_at: nowStr,
       status: 'SUCCESS',
       created_at: syncLog?.created_at || nowStr,
-      updated_at: nowStr
+      updated_at: nowStr,
     });
   }
 }

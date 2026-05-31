@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { db, Staff } from '../db/schema';
+import { SyncService } from '../services/SyncService';
 
 interface AuthContextType {
   currentUser: Staff | null;
@@ -18,37 +19,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const initAuth = async () => {
-  try {
-    // Wait for session to be fully ready
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error('Session error:', error);
-      setIsLoading(false);
-      return;
-    }
-
-    if (session?.user) {
-      await fetchAndSetUser(session.user.id);
-    } else {
-      setIsLoading(false);
-    }
-  } catch (error) {
-    console.error('Error restoring session:', error);
-    setIsLoading(false);
-  }
-};
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session error:', error);
+          setIsLoading(false);
+          return;
+        }
+        if (session?.user) {
+          await fetchAndSetUser(session.user.id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error restoring session:', error);
+        setIsLoading(false);
+      }
+    };
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchAndSetUser(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        await clearLocalData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await fetchAndSetUser(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+          await clearLocalData();
+        }
       }
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -56,37 +56,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const fetchAndSetUser = async (userId: string) => {
-  setIsLoading(true);
-  try {
-    // Small delay to ensure token is attached to requests
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const { data, error } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    setIsLoading(true);
+    try {
+      // Small delay to ensure token is attached to requests
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-    if (error) {
-      console.error('Staff fetch error:', error.message, error.code);
-      // If unauthorized, sign out cleanly
-      if (error.code === 'PGRST301' || error.message.includes('JWT')) {
-        await supabase.auth.signOut();
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) {
+        console.error('Staff fetch error:', error?.message, error?.code);
+        if (error?.code === 'PGRST301' || error?.message?.includes('JWT')) {
+          await supabase.auth.signOut();
+        }
+        setCurrentUser(null);
+      } else {
+        setCurrentUser(data as Staff);
+        // Only start sync AFTER user is confirmed
+        SyncService.init();
+        SyncService.syncIfAuthenticated();
       }
+    } catch (err) {
+      console.error('Failed to fetch user:', err);
       setCurrentUser(null);
-    } else {
-      setCurrentUser(data as Staff);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error('Failed to fetch user:', err);
-    setCurrentUser(null);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const clearLocalData = async () => {
-    const tables = ['houses', 'hostels', 'staff', 'students', 'attendance_records', 'leave_requests', 'sync_log', 'audit_log'];
+    const tables = [
+      'houses', 'hostels', 'staff', 'students',
+      'attendance_records', 'leave_requests', 'sync_log', 'audit_log'
+    ];
     for (const table of tables) {
       // @ts-ignore
       await db.table(table).clear();
@@ -100,12 +105,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      currentUser, 
-      role: currentUser?.role || null, 
-      assignedHouseIds: currentUser?.assigned_house_ids || [], 
-      isLoading, 
-      logout 
+    <AuthContext.Provider value={{
+      currentUser,
+      role: currentUser?.role || null,
+      assignedHouseIds: currentUser?.assigned_house_ids || [],
+      isLoading,
+      logout
     }}>
       {children}
     </AuthContext.Provider>

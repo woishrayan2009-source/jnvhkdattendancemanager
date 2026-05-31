@@ -16,10 +16,6 @@ const updateSW = registerSW({
     console.log('[PWA] App ready to work offline.')
   },
 })
-
-// Bootstrap new SyncService (online/offline listeners + initial sync)
-SyncService.init()
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
