@@ -1,35 +1,35 @@
-import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, ClipboardCheck, Calendar, Users,
+  LayoutDashboard, ClipboardCheck, Users,
   FileBarChart, QrCode, Settings, LogOut, BookOpen, X,
-  GraduationCap, FilePlus, CheckSquare, MapPin, ShieldCheck
+  FilePlus, CheckSquare, MapPin, ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { HOUSES } from '../../lib/supabase'
 
 const NAV_ITEMS = [
   // Role-specific dashboards (only one shows per role)
-  { to: '/principal-dashboard', icon: ShieldCheck,     label: 'Dashboard',       roles: ['ADMIN', 'PRINCIPAL'] },
-  { to: '/hm-dashboard',        icon: LayoutDashboard, label: 'Dashboard',       roles: ['HM'] },
-  { to: '/leave-tracker',       icon: MapPin,          label: 'Dashboard',       roles: ['GATE_GUARD'] },
+  { to: '/principal-dashboard', icon: ShieldCheck,     label: 'Dashboard',       roles: ['admin', 'principal', 'vice_principal'] },
+  { to: '/hm-dashboard',        icon: LayoutDashboard, label: 'Dashboard',       roles: ['house_master', 'associate_hm', 'warden'] },
+  { to: '/leave-tracker',       icon: MapPin,          label: 'Dashboard',       roles: ['gate_guard'] },
   // General nav
-  { to: '/mark-attendance',     icon: ClipboardCheck,  label: 'Mark Attendance', roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/leave-request',       icon: FilePlus,        label: 'New Leave',       roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/leave-approval',      icon: CheckSquare,     label: 'Leave Approvals', roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/leave-tracker',       icon: MapPin,          label: 'Leave Tracker',   roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/students',            icon: Users,           label: 'Students',        roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/reports',             icon: FileBarChart,    label: 'Reports',         roles: ['ADMIN', 'PRINCIPAL', 'HM'] },
-  { to: '/qr-cards',            icon: QrCode,          label: 'QR Cards',        roles: ['ADMIN', 'PRINCIPAL'] },
-  { to: '/settings',            icon: Settings,        label: 'Settings',        roles: ['ADMIN', 'PRINCIPAL'] },
+  { to: '/mark-attendance',     icon: ClipboardCheck,  label: 'Mark Attendance', roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden'] },
+  { to: '/leave-request',       icon: FilePlus,        label: 'New Leave',       roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden'] },
+  { to: '/leave-approval',      icon: CheckSquare,     label: 'Leave Approvals', roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden'] },
+  { to: '/leave-tracker',       icon: MapPin,          label: 'Leave Tracker',   roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden', 'gate_guard'] },
+  { to: '/students',            icon: Users,           label: 'Students',        roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden'] },
+  { to: '/reports',             icon: FileBarChart,    label: 'Reports',         roles: ['admin', 'principal', 'vice_principal', 'house_master', 'associate_hm', 'warden'] },
+  { to: '/qr-cards',            icon: QrCode,          label: 'QR Cards',        roles: ['admin', 'principal', 'vice_principal'] },
+  { to: '/settings',            icon: Settings,        label: 'Settings',        roles: ['admin', 'principal', 'vice_principal'] },
 ]
 
 export function Sidebar({ isOpen, onClose }) {
   const { currentUser, role, assignedHouseIds, logout } = useAuth()
   const navigate = useNavigate()
 
+  const normalizedRole = role?.toLowerCase() ?? null
   const visibleItems = NAV_ITEMS.filter(item =>
-    !role || item.roles.includes(role)
+    !normalizedRole || item.roles.includes(normalizedRole)
   )
 
   // Remove duplicate nav items (e.g. GATE_GUARD sees leave-tracker twice otherwise)
@@ -42,8 +42,8 @@ export function Sidebar({ isOpen, onClose }) {
     navigate('/login')
   }
 
-  // For HM — find their assigned house info
-  const hmHouseInfo = role === 'HM' && assignedHouseIds.length > 0
+  const isHM = ['house_master', 'associate_hm', 'warden'].includes(normalizedRole)
+  const hmHouseInfo = isHM && assignedHouseIds.length > 0
     ? HOUSES.find(h => h.id === assignedHouseIds[0])
     : null
 
