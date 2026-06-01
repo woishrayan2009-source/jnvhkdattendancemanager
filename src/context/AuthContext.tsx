@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const now = new Date().toISOString()
         staffRecord = { ...data, dirty: false, synced_at: now } as StaffMember
-        await db.staff.put(staffRecord)
+        await db.staff.put(staffRecord as any)
       }
 
       dispatch({ type: 'SET_USER', payload: staffRecord })
