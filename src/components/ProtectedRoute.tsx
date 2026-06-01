@@ -1,108 +1,99 @@
-import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useInactivityLock } from '../hooks/useInactivityLock';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   allowedRoles?: string[];
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { currentUser, role, isLoading } = useAuth();
-  const { isLocked, pin, unlock, setupPin, isInitialized } = useInactivityLock();
+  const { isLocked, pin, unlock, isInitialized } = useInactivityLock();
   const [inputPin, setInputPin] = useState('');
   const [pinError, setPinError] = useState(false);
 
+  // Wait for auth to finish loading
   if (isLoading || !isInitialized) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#1a3a5c] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Loading…</p>
+        </div>
+      </div>
+    );
   }
 
+  // Not authenticated → go to login
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
+  // Role guard — check if user has permission for this specific route
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="p-8 bg-white text-gray-800 rounded-lg shadow-lg text-center max-w-sm w-full border border-red-200">
-          <div className="mx-auto w-12 h-12 flex items-center justify-center bg-red-100 rounded-full mb-4">
-            <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <div className="flex h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-sm w-full border border-red-100">
+          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to view this page.</p>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-500 text-sm">You don't have permission to view this page.</p>
+          <p className="text-gray-400 text-xs mt-1">Your role: <span className="font-medium text-gray-600">{role}</span></p>
         </div>
       </div>
     );
   }
 
-  if (!pin) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white p-6 rounded-lg w-full max-w-sm shadow-xl">
-          <h3 className="text-lg font-bold mb-2 text-center text-gray-800">Set up Security PIN</h3>
-          <p className="text-sm text-gray-600 mb-6 text-center">Create a 4-digit PIN to secure the app when inactive.</p>
-          <input
-            type="password"
-            maxLength={4}
-            value={inputPin}
-            onChange={e => setInputPin(e.target.value.replace(/\D/g, ''))}
-            className="w-full text-center text-3xl tracking-[0.5em] border border-gray-300 py-3 rounded mb-6 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-            placeholder="••••"
-          />
-          <button
-            onClick={() => {
-              if (inputPin.length === 4) setupPin(inputPin);
-            }}
-            className="w-full bg-blue-600 text-white py-3 rounded font-medium disabled:opacity-50 transition-colors hover:bg-blue-700"
-            disabled={inputPin.length !== 4}
-          >
-            Save PIN
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLocked) {
+  // PIN lock screen — only shown when a PIN has been SET and the session is LOCKED
+  // If no PIN is set, skip the lock entirely (PIN setup is now optional, done via Settings)
+  if (pin && isLocked) {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div className="bg-white p-6 rounded-lg w-full max-w-sm shadow-xl">
-          <div className="mx-auto w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full mb-4">
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+          <div className="mx-auto w-14 h-14 flex items-center justify-center bg-[#1a3a5c]/10 rounded-full mb-4">
+            <svg className="w-7 h-7 text-[#1a3a5c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold mb-2 text-center text-gray-800">App Locked</h3>
-          <p className="text-sm text-gray-600 mb-6 text-center">Enter your 4-digit PIN to unlock.</p>
+          <h3 className="text-xl font-bold mb-1 text-center text-gray-800">App Locked</h3>
+          <p className="text-sm text-gray-500 mb-6 text-center">Enter your 4-digit PIN to continue.</p>
           <input
             type="password"
             maxLength={4}
             value={inputPin}
+            autoFocus
             onChange={e => {
               setInputPin(e.target.value.replace(/\D/g, ''));
               if (pinError) setPinError(false);
             }}
-            className={`w-full text-center text-3xl tracking-[0.5em] border py-3 rounded mb-2 focus:outline-none transition-colors ${pinError ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && inputPin.length === 4) {
+                const ok = unlock(inputPin);
+                if (ok) { setInputPin(''); setPinError(false); }
+                else { setPinError(true); }
+              }
+            }}
+            className={`w-full text-center text-3xl tracking-[0.5em] border py-3 rounded-xl mb-2 focus:outline-none transition-colors ${
+              pinError ? 'border-red-400 bg-red-50 text-red-600' : 'border-gray-200 focus:border-[#1a3a5c] focus:ring-2 focus:ring-[#1a3a5c]/20'
+            }`}
             placeholder="••••"
           />
-          <div className="h-6 mb-4">
+          <div className="h-5 mb-4">
             {pinError && <p className="text-red-500 text-sm text-center">Incorrect PIN. Try again.</p>}
           </div>
           <button
             onClick={() => {
-              const success = unlock(inputPin);
-              if (success) {
-                setPinError(false);
-                setInputPin('');
-              } else {
-                setPinError(true);
-              }
+              const ok = unlock(inputPin);
+              if (ok) { setInputPin(''); setPinError(false); }
+              else { setPinError(true); }
             }}
-            className="w-full bg-blue-600 text-white py-3 rounded font-medium disabled:opacity-50 transition-colors hover:bg-blue-700"
             disabled={inputPin.length !== 4}
+            className="w-full bg-[#1a3a5c] text-white py-3 rounded-xl font-semibold disabled:opacity-40 transition-all hover:bg-[#0f2440]"
           >
             Unlock
           </button>
@@ -111,5 +102,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     );
   }
 
-  return <>{children}</>;
+  // Authenticated and not locked — render children or nested routes
+  return <>{children ?? <Outlet />}</>;
 };

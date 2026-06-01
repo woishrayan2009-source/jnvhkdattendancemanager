@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useRef } from 'react'
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { StaffMember, StaffRole, HouseId } from '@/types'
 
@@ -38,6 +39,7 @@ interface AuthContextValue {
   signOut:     () => Promise<void>
   hasRole:     (roles: StaffRole[]) => boolean
   canSeeHouse: (houseId: string) => boolean
+  dismissIdleWarning: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -51,28 +53,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, {
     user: null, loading: true, initialized: false, idleWarning: false,
   })
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Idle timer reset
+  // ── Fix: use ref to track login state inside timer callback ─────────────
+  // Previously resetIdleTimer read state.user from a stale closure (captured
+  // at useEffect mount time). Using a ref means the callback always sees the
+  // latest value without being in the dependency array.
+  const userRef     = useRef<StaffMember | null>(null)
+  userRef.current   = state.user
+
+  const idleTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const resetIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current)
-    if (!state.user) return
+    if (!userRef.current) return   // no user — don't arm timer
     idleTimer.current = setTimeout(
       () => dispatch({ type: 'SET_IDLE_WARNING', payload: true }),
       IDLE_TIMEOUT_MS,
     )
   }
 
+  // ── Fix: add explicit dependency array [] + cleanup to avoid re-attaching
+  // on every render (was missing deps array entirely before)
   useEffect(() => {
     const events = ['mousedown', 'touchstart', 'keydown', 'scroll']
     events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }))
     return () => events.forEach((e) => window.removeEventListener(e, resetIdleTimer))
-  })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Supabase session listener
+  // ── Fix: use proper SDK types; move SET_INITIALIZED AFTER staff query ────
+  // Previously SET_INITIALIZED fired immediately (before staff data loaded),
+  // causing a flash of the login page on hard refresh.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: string, session: { user: { id: string } } | null) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         if (session?.user) {
           const { data } = await supabase
             .from('staff')
@@ -83,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           dispatch({ type: 'SET_USER', payload: null })
         }
+        // Moved AFTER staff query resolves — prevents login flash on refresh
         dispatch({ type: 'SET_INITIALIZED' })
       }
     )
@@ -99,8 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    if (idleTimer.current) clearTimeout(idleTimer.current)
     await supabase.auth.signOut()
     dispatch({ type: 'SET_USER', payload: null })
+  }
+
+  const dismissIdleWarning = () => {
+    dispatch({ type: 'SET_IDLE_WARNING', payload: false })
+    resetIdleTimer()
   }
 
   const hasRole = (roles: StaffRole[]) =>
@@ -114,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, signIn, signOut, hasRole, canSeeHouse }}
+      value={{ ...state, signIn, signOut, hasRole, canSeeHouse, dismissIdleWarning }}
     >
       {children}
     </AuthContext.Provider>

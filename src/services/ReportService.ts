@@ -147,6 +147,13 @@ export async function generateMonthlyAttendance(
         else present++; // not yet marked — optimistic
       }
       const total = dayStrs.length;
+      // Denominator = only days with a real mark (present or absent).
+      // Excludes future/unmarked days (avoids optimistic inflation) and
+      // on-leave days (student wasn't expected to be present).
+      const markedDays = present + absent;
+      const attendancePct = markedDays > 0
+        ? Math.round((present / markedDays) * 100)
+        : 0;
       rows.push({
         name: stu.name,
         houseName: house.name,
@@ -154,7 +161,7 @@ export async function generateMonthlyAttendance(
         presentDays: present,
         absentDays: absent,
         leaveDays: onLeave,
-        attendancePct: total > 0 ? Math.round((present / (total - onLeave || 1)) * 100) : 0,
+        attendancePct,
       });
     }
   }

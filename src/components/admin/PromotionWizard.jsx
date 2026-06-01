@@ -50,7 +50,7 @@ export function PromotionWizard({ onDone }) {
             <input
               type="number"
               value={academicYear}
-              onChange={e => setAcademicYear(parseInt(e.target.value))}
+              onChange={e => setAcademicYear(parseInt(e.target.value, 10))}
               min={2020}
               max={2035}
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a5c]/20"

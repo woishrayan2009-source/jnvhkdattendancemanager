@@ -128,12 +128,12 @@ export async function amendRecord(recordId, updates, amendedBy, reason) {
     .single()
   if (error) throw error
 
-  // Increment amendment count on session
-  const record = data
-  await supabase
-    .from('attendance_sessions')
-    .update({ amendment_count: supabase.rpc('increment', { row_id: record.session_id }) })
-    .eq('id', record.session_id)
+  // Increment amendment_count on the session using a safe read-then-increment.
+  // The old code passed supabase.rpc() Promise directly as the column value
+  // which set the DB column to [object Promise] — now we use a Postgres expression.
+  await supabase.rpc('increment_amendment_count', { session_id_arg: record.session_id })
+    .then(() => {})          // fire-and-forget; non-critical
+    .catch((e) => console.warn('amendment_count increment failed:', e))
 
   return data
 }

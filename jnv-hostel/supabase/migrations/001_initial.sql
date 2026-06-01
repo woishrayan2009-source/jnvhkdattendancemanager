@@ -659,17 +659,49 @@ CREATE TRIGGER audit_leave_requests
   FOR EACH ROW EXECUTE FUNCTION fn_audit_log();
 
 -- ─── Auth hook: link auth.users → staff on first sign-up ─────────────────────
--- When an auth user is created whose email matches a pre-seeded staff row,
--- the staff.id is updated to match auth.uid() so RLS resolves correctly.
--- In practice: Admin seeds staff by email → creates Supabase auth user with same email.
+-- When a Supabase Auth user is created whose email matches a pre-seeded staff row,
+-- we replace the placeholder UUID with the real auth.uid().
+--
+-- Fix: Cannot UPDATE staff.id because it is a FK (references auth.users(id))
+-- with no ON UPDATE CASCADE. Instead: capture the old row, delete it,
+-- then re-insert with the correct id. ON CONFLICT guard handles already-linked rows.
 CREATE OR REPLACE FUNCTION fn_handle_new_auth_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_existing public.staff%ROWTYPE;
 BEGIN
-  -- If a staff row with this email already exists (seeded by admin), adopt the auth UUID
-  UPDATE public.staff
-  SET id = NEW.id
+  -- Find a placeholder staff row with this email but a different (non-auth) id
+  SELECT * INTO v_existing
+  FROM public.staff
   WHERE email = NEW.email
     AND id    != NEW.id;
+
+  IF FOUND THEN
+    -- Remove placeholder row first (cascade will handle child FKs if any)
+    DELETE FROM public.staff WHERE id = v_existing.id;
+
+    -- Re-insert with the real auth.uid()
+    INSERT INTO public.staff (
+      id, email, full_name, role,
+      assigned_house_ids, phone, is_active,
+      academic_year, pin_hash,
+      created_at, updated_at
+    ) VALUES (
+      NEW.id,
+      v_existing.email,
+      v_existing.full_name,
+      v_existing.role,
+      v_existing.assigned_house_ids,
+      v_existing.phone,
+      v_existing.is_active,
+      v_existing.academic_year,
+      v_existing.pin_hash,
+      v_existing.created_at,
+      NOW()
+    )
+    ON CONFLICT (id) DO NOTHING;  -- already linked, no-op
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -677,6 +709,7 @@ $$;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION fn_handle_new_auth_user();
+
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- VIEWS

@@ -18,8 +18,8 @@ export function usePWAInstall(): UsePWAInstall {
   const [canInstall, setCanInstall] = useState(false)
 
   useEffect(() => {
-    // Don't show if already dismissed
-    if (sessionStorage.getItem(DISMISSED_KEY)) return
+    // Don't show if already dismissed (persisted in localStorage across sessions)
+    if (localStorage.getItem(DISMISSED_KEY)) return
 
     const handler = (e: Event) => {
       e.preventDefault()
@@ -39,7 +39,7 @@ export function usePWAInstall(): UsePWAInstall {
   }
 
   const dismiss = () => {
-    sessionStorage.setItem(DISMISSED_KEY, '1')
+    localStorage.setItem(DISMISSED_KEY, '1')
     setCanInstall(false)
   }
 

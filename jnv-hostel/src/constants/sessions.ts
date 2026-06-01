@@ -31,13 +31,30 @@ export const SESSIONS = [
 
 export type SessionId = typeof SESSIONS[number]['id']
 
-/** Returns the session that should currently be active, or the last one */
+/**
+ * Returns the session currently active, or the nearest one.
+ *
+ * Coverage:
+ *  00–05 → night   (late-night / early morning before morning roll-call)
+ *  06–07 → morning (06:00–08:00)
+ *  08–16 → morning (between morning and evening — closest past session)
+ *  17–20 → evening (17:00–19:00)
+ *  21–23 → night   (21:00–23:00)
+ */
 export function getCurrentSession(): typeof SESSIONS[number] {
   const hour = new Date().getHours()
-  return (
-    SESSIONS.find((s) => hour >= s.startHour && hour < s.endHour) ??
-    SESSIONS[SESSIONS.length - 1]
-  )
+  // Check if we're within an active session window
+  const active = SESSIONS.find((s) => hour >= s.startHour && hour < s.endHour)
+  if (active) return active
+
+  // Between sessions: return the most recently passed session
+  if (hour < SESSIONS[0].startHour) {
+    // Before morning roll-call (0–5am) → night was the last session
+    return SESSIONS[SESSIONS.length - 1]
+  }
+  // Find the last session whose window has already ended
+  const past = [...SESSIONS].reverse().find((s) => hour >= s.endHour)
+  return past ?? SESSIONS[SESSIONS.length - 1]
 }
 
 // ─── Attendance statuses ──────────────────────────────────────────────────────

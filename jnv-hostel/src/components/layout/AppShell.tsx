@@ -25,8 +25,8 @@ export function AppShell() {
           </div>
         )}
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Page content — pb-16 prevents content hiding behind fixed mobile nav */}
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
             <Outlet />
           </div>

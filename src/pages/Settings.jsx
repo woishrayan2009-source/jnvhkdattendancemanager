@@ -10,7 +10,6 @@ import { useToast } from '../components/ui/Toast'
 export default function Settings() {
   const { role } = useAuth()
   const toast = useToast()
-  const [activeTab, setActiveTab] = useState('password')
   const [pwForm, setPwForm] = useState({ next: '', confirm: '' })
   const [pwLoading, setPwLoading] = useState(false)
 
@@ -23,7 +22,8 @@ export default function Settings() {
     { id: 'password',  label: 'Change Password',    icon: Lock,          show: true },
   ].filter(t => t.show)
 
-  // Default to first available tab on mount
+  // Initialize to first available tab so activeTab and activeTabId always agree
+  const [activeTab, setActiveTab] = useState(() => tabs[0]?.id ?? 'password')
   const activeTabId = tabs.find(t => t.id === activeTab)?.id ?? tabs[0]?.id
 
   const handlePwChange = async (e) => {

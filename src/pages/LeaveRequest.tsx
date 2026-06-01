@@ -65,7 +65,7 @@ export default function LeaveRequest() {
     try {
       const lower = q.toLowerCase();
       const res = await db.students
-        .filter(s => s.name.toLowerCase().includes(lower) || s.id.toLowerCase().includes(lower))
+        .filter(s => s.name.toLowerCase().includes(lower) || (s.roll_number?.toLowerCase() ?? '').includes(lower))
         .limit(10)
         .toArray();
       setResults(res);

@@ -19,7 +19,7 @@ export default defineConfig({
         enabled: true,
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json,webmanifest}'],
         // Cache strategies
         runtimeCaching: [
           {
@@ -28,7 +28,7 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api-cache',
-              networkTimeoutSeconds: 5,
+              networkTimeoutSeconds: 12, // 12s for slow school connections
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24, // 24 hours
@@ -73,7 +73,9 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'esnext',
+    // Target browsers from ~2020 onward (school tablets/computers).
+    // 'esnext' was too aggressive for older Android WebViews.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
     rollupOptions: {
       output: {
         manualChunks: (id) => {

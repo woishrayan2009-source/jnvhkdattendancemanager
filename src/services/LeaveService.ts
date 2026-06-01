@@ -1,6 +1,6 @@
 import { db, LeaveRequest, LeaveStatus, LeaveType, PickupMode } from '../db/schema';
 import { supabase } from '../lib/supabase';
-import { isAfter, isBefore, parseISO } from 'date-fns';
+import { isAfter, isBefore, parseISO, differenceInDays } from 'date-fns';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 export interface LeaveSubmitInput {
@@ -68,9 +68,8 @@ export async function approveLeave(leaveId: string, approverRole: 'HM' | 'PRINCI
   const leave = await db.leave_requests.get(leaveId);
   if (!leave) throw new Error('Leave request not found');
 
-  const dayCount = Math.ceil(
-    (parseISO(leave.end_date).getTime() - parseISO(leave.start_date).getTime()) / (1000 * 60 * 60 * 24)
-  ) + 1;
+  // Use differenceInDays (date-fns) to avoid timezone rounding bugs in IST
+  const dayCount = differenceInDays(parseISO(leave.end_date), parseISO(leave.start_date)) + 1;
 
   let newStatus: LeaveStatus;
 
@@ -137,9 +136,13 @@ export async function getOverdueLeaves(): Promise<LeaveRequest[]> {
 }
 
 // ─── getTodaysLeaves ───────────────────────────────────────────────────────
-export async function getTodaysLeaves(): Promise<LeaveRequest[]> {
+/**
+ * Returns all approved leaves active today.
+ * Pass houseId to restrict to a single house (for HM dashboard).
+ */
+export async function getTodaysLeaves(houseId?: string | null): Promise<LeaveRequest[]> {
   const today = new Date().toISOString().split('T')[0];
-  return db.leave_requests
+  const all = await db.leave_requests
     .filter(r =>
       r.status === 'APPROVED' &&
       r.start_date <= today &&
@@ -147,6 +150,13 @@ export async function getTodaysLeaves(): Promise<LeaveRequest[]> {
       r.actual_return_time === null
     )
     .toArray();
+
+  if (!houseId) return all;
+
+  // Filter to just this house's students
+  const houseStudents = await db.students.where('house_id').equals(houseId).toArray();
+  const houseStudentIds = new Set(houseStudents.map(s => s.id));
+  return all.filter(r => houseStudentIds.has(r.student_id));
 }
 
 // ─── getPendingLeaves ──────────────────────────────────────────────────────

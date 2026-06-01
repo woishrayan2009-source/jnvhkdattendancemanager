@@ -1,9 +1,8 @@
-import React, { useRef, useCallback, useState } from 'react';
-// ✅ Alternative - bypasses named export resolution issues
+import React, { useRef } from 'react';
 import * as ReactWindow from 'react-window';
 const { FixedSizeList } = ReactWindow;
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { Student, AttendanceRecord } from '../../db/schema';
+import type { ListChildComponentProps } from 'react-window';
+import { Student } from '../../db/schema';
 import { AttendanceStatus } from '../../services/AttendanceService';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 
@@ -153,7 +152,7 @@ export const RollCallList: React.FC<RollCallListProps> = ({
         ) : (
           <FixedSizeList
             ref={listRef}
-            height={Math.min(students.length * ROW_HEIGHT, window.innerHeight * 0.55)}
+            height={Math.min(students.length * ROW_HEIGHT, window.innerHeight * 0.6)}
             itemCount={students.length}
             itemSize={ROW_HEIGHT}
             width="100%"

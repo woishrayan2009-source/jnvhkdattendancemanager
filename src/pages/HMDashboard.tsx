@@ -52,7 +52,7 @@ export default function HMDashboard() {
     try {
       const [str, leaves, pending] = await Promise.all([
         getStrengthForHouse(primaryHouseId, today()),
-        getTodaysLeaves(),
+        getTodaysLeaves(primaryHouseId),
         getPendingLeaves('HM', assignedHouseIds),
       ]);
       setStrength(str);

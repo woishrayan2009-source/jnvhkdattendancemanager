@@ -18,8 +18,10 @@ export class JNVDatabase extends Dexie {
   attendance!:       Table<AttendanceRecord>
   leave_requests!:   Table<LeaveRequest>
   staff!:            Table<StaffMember>
-  sync_queue!:       Table<SyncQueueItem>
-  audit_log!:        Table<AuditLogEntry>
+  // Fix: SyncQueueItem.id is typed string in types/index.ts but Dexie '++id'
+  // auto-increment produces numbers. Override the key type to number here.
+  sync_queue!:       Table<Omit<SyncQueueItem, 'id'> & { id?: number }>
+  audit_log!:        Table<Omit<AuditLogEntry, 'id'> & { id?: number }>
 
   constructor() {
     super('jnv-hostel-db')

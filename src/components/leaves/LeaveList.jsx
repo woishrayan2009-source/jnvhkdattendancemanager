@@ -4,7 +4,7 @@ import { getLeaves, deleteLeave } from '../../services/leaves'
 import { Badge, StatusBadge } from '../ui/Badge'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from '../ui/Toast'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 
 export function LeaveList({ studentId, refresh }) {
   const { role } = useAuth()
@@ -73,7 +73,7 @@ export function LeaveList({ studentId, refresh }) {
       ) : (
         <div className="space-y-2">
           {filtered.map(leave => {
-            const days = Math.round((new Date(leave.to_date) - new Date(leave.from_date)) / 86400000) + 1
+            const days = differenceInDays(new Date(leave.to_date), new Date(leave.from_date)) + 1
             return (
               <div key={leave.id} className="bg-white border border-gray-100 rounded-xl p-4 flex items-start gap-4">
                 <Badge variant={leave.leave_type} className="mt-0.5 shrink-0">{leave.leave_type}</Badge>

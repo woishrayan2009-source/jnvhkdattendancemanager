@@ -17,7 +17,7 @@ const updateSW = registerSW({
   },
 })
 
-// Bootstrap new SyncService (online/offline listeners + initial sync)
+// Bootstrap SyncService — registers online/offline listeners (idempotent, safe to call once here)
 SyncService.init()
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -6,8 +6,18 @@ import { useAttendanceStore } from '../../store/attendanceStore'
 
 export function QRScanner({ onStudentScanned, onClose }) {
   const scannerRef = useRef(null)
-  const [scannerInstance, setScannerInstance] = useState(null)
-  const [lastScanned, setLastScanned] = useState(null)
+  /**
+   * Use a ref instead of state for lastScanned.
+   *
+   * Bug: scanner.render() captures the closure at effect-mount time.
+   * setState updates React state but the scanner callback NEVER sees the
+   * new value — the stale `lastScanned === null` check always passes,
+   * so every re-scan of the same code fires multiple times.
+   *
+   * Fix: useRef — the callback reads .current directly, always fresh.
+   */
+  const lastScannedRef = useRef(null)
+  const [lastScannedDisplay, setLastScannedDisplay] = useState(null) // UI only
   const toast = useToast()
   const store = useAttendanceStore()
 
@@ -22,27 +32,34 @@ export function QRScanner({ onStudentScanned, onClose }) {
       )
       scanner.render(
         async (decodedText) => {
-          if (decodedText === lastScanned) return
-          setLastScanned(decodedText)
+          // Guard against duplicate scans — ref always has fresh value
+          if (decodedText === lastScannedRef.current) return
+          lastScannedRef.current = decodedText
+          setLastScannedDisplay(decodedText) // trigger UI update only
           try {
             const student = await getStudentByQR(decodedText)
             if (!student) { toast.error('Student not found for this QR'); return }
-            // Mark as present
             store.markStudent(student.id, 'present')
             toast.success(`✓ ${student.name} — marked Present`)
             onStudentScanned?.(student)
-            setTimeout(() => setLastScanned(null), 2000)
+            // Allow re-scan after 2 seconds
+            setTimeout(() => {
+              lastScannedRef.current = null
+              setLastScannedDisplay(null)
+            }, 2000)
           } catch (err) {
             toast.error('QR scan error: ' + err.message)
+            lastScannedRef.current = null
+            setLastScannedDisplay(null)
           }
         },
-        (err) => { /* scan errors are normal */ }
+        (_err) => { /* scan frame errors are normal — ignore */ }
       )
-      setScannerInstance(scanner)
+      scannerRef.current = scanner
     }
     startScanner()
     return () => { scanner?.clear?.() }
-  }, [])
+  }, []) // empty deps — refs never cause stale closures
 
   return (
     <div className="relative">
@@ -58,7 +75,7 @@ export function QRScanner({ onStudentScanned, onClose }) {
 
       <div id="qr-reader" className="rounded-xl overflow-hidden" />
 
-      {lastScanned && (
+      {lastScannedDisplay && (
         <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm text-emerald-700">
           ✓ Scanned successfully
         </div>

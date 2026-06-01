@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Calendar, User } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { differenceInDays } from 'date-fns'
 import { LEAVE_TYPES, SCHOOL_ID } from '../../lib/supabase'
 import { recordLeave } from '../../services/leaves'
 import { fetchStudents } from '../../services/students'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from '../ui/Toast'
-
 export function LeaveForm({ onSuccess, prefillStudentId }) {
   const { currentUser, role, assignedHouseIds } = useAuth()
   const toast = useToast()
@@ -51,7 +51,7 @@ export function LeaveForm({ onSuccess, prefillStudentId }) {
   }
 
   const duration = form.from_date && form.to_date
-    ? Math.max(0, Math.round((new Date(form.to_date) - new Date(form.from_date)) / 86400000) + 1)
+    ? Math.max(0, differenceInDays(new Date(form.to_date), new Date(form.from_date)) + 1)
     : 0
 
   return (

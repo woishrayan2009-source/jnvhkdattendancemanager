@@ -98,3 +98,7 @@
 }
 
 .sync-pulse { animation: pulse-amber 2s infinite; }
+
+/* ─── Safe-area utilities ────────────────────────────────────────────────────── */
+/* Used by Sidebar mobile nav for notched phones (iPhone X+) in PWA mode */
+.safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }

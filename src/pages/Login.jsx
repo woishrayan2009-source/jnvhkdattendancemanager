@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { BookOpen, Eye, EyeOff, Lock, Mail, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -16,13 +16,6 @@ export default function Login() {
   const [error,    setError]    = useState('')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
 
-  const from = location.state?.from?.pathname || '/'
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!isLoading && currentUser) navigate(from, { replace: true })
-  }, [currentUser, isLoading, from, navigate])
-
   // Track online status
   useEffect(() => {
     const online  = () => setIsOnline(true)
@@ -35,15 +28,39 @@ export default function Login() {
     }
   }, [])
 
+  // If already authenticated, redirect immediately using Navigate (not useEffect)
+  // This avoids the race condition where useEffect fires after render causing flicker
+  if (!isLoading && currentUser) {
+    const role = currentUser.role
+    if (role === 'PRINCIPAL' || role === 'ADMIN') return <Navigate to="/principal-dashboard" replace />
+    if (role === 'HM')         return <Navigate to="/hm-dashboard" replace />
+    if (role === 'GATE_GUARD') return <Navigate to="/leave-tracker" replace />
+    return <Navigate to="/principal-dashboard" replace />
+  }
+
+  // Show spinner while checking session
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2440] via-[#1a3a5c] to-[#0f2440] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          <p className="text-white/60 text-sm">Loading…</p>
+        </div>
+      </div>
+    )
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (!isOnline) { setError('You are offline. Please connect to the internet to log in.'); return }
     setLoading(true)
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError) throw authError
-      if (data.session) navigate(from, { replace: true })
+      // AuthContext will pick up the SIGNED_IN event and update currentUser,
+      // which will trigger the redirect logic at the top of this component.
+      // No manual navigate() needed here.
     } catch (err) {
       setError(err.message || 'Invalid email or password')
     } finally {
@@ -95,6 +112,7 @@ export default function Login() {
                     className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a5c]/20 focus:border-[#1a3a5c] transition-colors"
                     required
                     autoComplete="email"
+                    autoFocus
                   />
                 </div>
               </div>

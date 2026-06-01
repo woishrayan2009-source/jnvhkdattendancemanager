@@ -39,7 +39,8 @@ export default function Students() {
     }
   }
 
-  useEffect(() => { load() }, [houseFilter, isHM, assignedHouseIds.join(',')])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [houseFilter, isHM, JSON.stringify(assignedHouseIds)])
 
   const filtered = useMemo(() => {
     let list = students

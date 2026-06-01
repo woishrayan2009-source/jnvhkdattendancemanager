@@ -12,28 +12,32 @@ export function useSyncStatus(): SyncStatusResult {
   const [status,       setStatus]       = useState<SyncStatus>('idle')
 
   useEffect(() => {
-    // Live query — updates whenever sync_queue changes
-    const subscription = db.sync_queue
-      .hook('creating', () => refresh())
-    
-    refresh()
+    let cancelled = false
 
     async function refresh() {
       try {
         const count = await db.sync_queue.count()
+        if (cancelled) return
         setPendingCount(count)
-        setStatus(count > 0 ? 'idle' : 'idle')
+        // Fix: was setStatus(count > 0 ? 'idle' : 'idle') — never showed 'pending'
+        setStatus(count > 0 ? 'syncing' : 'idle')
       } catch {
-        setStatus('error')
+        if (!cancelled) setStatus('error')
       }
     }
 
-    // Poll every 5 seconds as a simple approach (Phase 3 will use Dexie live queries)
-    const interval = setInterval(refresh, 5000)
+    refresh()
+
+    // Fix: Dexie hook API does not return a subscription with .unsubscribe().
+    // Use a polling interval instead (simple, reliable).
+    // Phase 3 will replace this with Dexie liveQuery from dexie-react-hooks.
+    const interval = setInterval(refresh, 5_000)
 
     return () => {
+      cancelled = true
       clearInterval(interval)
-      db.sync_queue.hook('creating').unsubscribe(subscription as never)
+      // Note: no Dexie hook to unsubscribe — removed the broken
+      // db.sync_queue.hook('creating').unsubscribe() call that threw at runtime
     }
   }, [])
 

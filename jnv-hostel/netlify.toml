@@ -1,9 +1,13 @@
 [build]
+  # base tells Netlify to run the build from inside jnv-hostel/
+  # Without this, Netlify runs from repo root and can't find package.json
+  base      = "jnv-hostel"
   command   = "npm run build"
   publish   = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Minimum 20.19.0 required by @eslint/config-array and related peer deps
+  NODE_VERSION = "20.19.0"
 
 # SPA: redirect all routes to index.html
 [[redirects]]
@@ -15,11 +19,15 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options        = "DENY"
-    X-XSS-Protection       = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy        = "strict-origin-when-cross-origin"
-    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
+    X-Frame-Options           = "DENY"
+    X-XSS-Protection          = "1; mode=block"
+    X-Content-Type-Options    = "nosniff"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    # camera=(self) for QR scanning; no mic/geo needed
+    Permissions-Policy        = "camera=(self), microphone=(), geolocation=()"
+    # CSP: allows Supabase API, Google Fonts, inline React scripts, blob workers for QR
+    Content-Security-Policy   = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; worker-src 'self' blob:;"
 
 [[headers]]
   for = "/assets/*"

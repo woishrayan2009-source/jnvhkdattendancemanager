@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentSession } from '../hooks/useCurrentSession'
 import { SessionBanner } from '../components/attendance/SessionBanner'
@@ -14,6 +15,7 @@ export default function MarkAttendance() {
   const { currentUser, role, assignedHouseIds } = useAuth()
   const currentSession = useCurrentSession()
   const toast = useToast()
+  const [searchParams] = useSearchParams()
 
   const [selectedHouse, setSelectedHouse]     = useState(null)
   const [selectedSession, setSelectedSession] = useState(null)
@@ -27,8 +29,14 @@ export default function MarkAttendance() {
     if (role === 'HM' && assignedHouseIds.length > 0) {
       setSelectedHouse(assignedHouseIds[0])
     }
-    if (currentSession) setSelectedSession(currentSession.type)
-  }, [role, assignedHouseIds, currentSession])
+    // Prefer URL param (?session=morning), else fall back to current time-based session
+    const paramSession = searchParams.get('session')
+    if (paramSession && ['morning','evening','night'].includes(paramSession)) {
+      setSelectedSession(paramSession)
+    } else if (currentSession) {
+      setSelectedSession(currentSession.type)
+    }
+  }, [role, assignedHouseIds, currentSession, searchParams])
 
   useEffect(() => {
     if (!selectedHouse) return

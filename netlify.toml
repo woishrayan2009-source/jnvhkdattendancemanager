@@ -3,7 +3,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Minimum Node 20.19.0 required by several devDependencies
+  # (e.g. @eslint/config-array requires ^20.19.0 || ^22.12.0)
+  NODE_VERSION = "20.19.0"
+  # --legacy-peer-deps is still needed for react-virtualized-auto-sizer
+  # which declares peer dep on React 16/17 but works fine with React 19
   NPM_FLAGS    = "--legacy-peer-deps"
 
 # ── SPA catch-all — must come first ────────────────────────────────────────
@@ -16,7 +20,7 @@
 [[headers]]
   for = "/sw.js"
   [headers.values]
-    Cache-Control         = "no-cache, no-store, must-revalidate"
+    Cache-Control          = "no-cache, no-store, must-revalidate"
     Service-Worker-Allowed = "/"
 
 [[headers]]
@@ -43,6 +47,17 @@
     X-Frame-Options           = "DENY"
     X-Content-Type-Options    = "nosniff"
     Referrer-Policy           = "strict-origin-when-cross-origin"
-    Permissions-Policy        = "camera=(self), microphone=()"
-    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-XSS-Protection          = "1; mode=block"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    # camera=(self) — required for html5-qrcode QR scanner on same origin
+    # display-capture=() — prevents screen recording (privacy)
+    Permissions-Policy        = "camera=(self), microphone=(), display-capture=()"
+    # Content-Security-Policy:
+    #   - default-src 'self'           → baseline allow-list
+    #   - script-src 'self' 'unsafe-inline' → React inline event handlers + Vite chunks
+    #   - style-src 'self' 'unsafe-inline' fonts.googleapis.com → Tailwind inline + Google Fonts
+    #   - font-src fonts.gstatic.com   → Inter font files
+    #   - connect-src *.supabase.co    → Supabase API + Realtime WebSocket
+    #   - img-src 'self' data: blob:   → QR code canvas blobs + data URIs
+    #   - worker-src 'self' blob:      → Service worker + html5-qrcode web workers
+    Content-Security-Policy   = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:; worker-src 'self' blob:; media-src 'self' blob:;"
