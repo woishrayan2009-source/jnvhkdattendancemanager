@@ -1,9 +1,25 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef, ReactNode } from 'react'
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
-import { db } from '@/db/schema'
-import { SyncService } from '@/services/SyncService'
-import type { StaffMember, StaffRole, HouseId } from '@/types'
+import { supabase } from '../lib/supabase'
+import { db } from '../db/schema'
+import { SyncService } from '../services/SyncService'
+export type StaffRole = 'principal' | 'vice_principal' | 'house_master' | 'associate_hm' | 'warden' | 'gate_guard' | 'admin'
+export type HouseId = string
+
+export interface StaffMember {
+  id:                  string
+  email:               string
+  full_name:           string
+  role:                StaffRole
+  assigned_house_ids:  string[] | null
+  is_active:           boolean
+  academic_year:       string
+  pin_hash:            string | null
+  created_at:          string
+  updated_at:          string
+  dirty?:              boolean
+  synced_at?:          string
+}
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -53,8 +69,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 const IDLE_TIMEOUT_MS =
-  (Number(import.meta.env.VITE_IDLE_TIMEOUT_MINUTES) || 10) * 60 * 1000
-
+  (Number((import.meta as any).env.VITE_IDLE_TIMEOUT_MINUTES) || 10) * 60 * 1000
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
