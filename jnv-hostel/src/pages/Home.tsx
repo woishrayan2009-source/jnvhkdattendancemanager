@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ClipboardCheck, CalendarClock, Users, BarChart3, School, Wifi } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -6,6 +7,7 @@ import { getCurrentSession, SESSIONS } from '@/constants/sessions'
 import { HOUSES } from '@/constants/houses'
 import { Badge } from '@/components/ui/Badge'
 import { clsx } from 'clsx'
+import { getDailyAttendanceCounts, getTodaysLeaveSummary } from '@/services/reports'
 
 const QUICK_ACTIONS = [
   { label: 'Mark Attendance', icon: ClipboardCheck, to: '/attendance', color: 'bg-navy-800 text-white hover:bg-navy-700',  roles: ['principal','vice_principal','house_master','associate_hm','warden']      },
@@ -18,7 +20,32 @@ export default function Home() {
   const { user, hasRole } = useAuth()
   const today              = format(new Date(), 'EEEE, d MMMM yyyy')
   const currentSession     = getCurrentSession()
-  const visibleActions     = QUICK_ACTIONS.filter((a) => hasRole(a.roles as Parameters<typeof hasRole>[0]))
+  const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({})
+  const [leaveSummary, setLeaveSummary] = useState({ activeLeaves: 0, overdueLeaves: 0 })
+  const [loadingSummary, setLoadingSummary] = useState(true)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+
+  const visibleActions = QUICK_ACTIONS.filter((a) => hasRole(a.roles as Parameters<typeof hasRole>[0]))
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingSummary(true)
+      setSummaryError(null)
+      try {
+        const todayDate = format(new Date(), 'yyyy-MM-dd')
+        const counts = await getDailyAttendanceCounts(todayDate)
+        const leaves = await getTodaysLeaveSummary(todayDate)
+        setAttendanceCounts(counts)
+        setLeaveSummary(leaves)
+      } catch (err: unknown) {
+        setSummaryError(err instanceof Error ? err.message : 'Failed to load dashboard summary')
+      } finally {
+        setLoadingSummary(false)
+      }
+    }
+
+    void load()
+  }, [])
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
@@ -79,7 +106,29 @@ export default function Home() {
         </section>
       )}
 
-      {/* Session status per house */}
+      <section className="grid gap-4 md:grid-cols-3">
+        {loadingSummary ? (
+          <div className="card p-6 text-center text-slate-500">Loading summary…</div>
+        ) : summaryError ? (
+          <div className="card p-6 text-red-600">{summaryError}</div>
+        ) : (
+          <> 
+            <div className="card p-6">
+              <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Present today</p>
+              <p className="mt-4 text-3xl font-semibold text-slate-900">{attendanceCounts.present ?? 0}</p>
+            </div>
+            <div className="card p-6">
+              <p className="text-sm uppercase tracking-[0.2em] text-slate-500">On leave</p>
+              <p className="mt-4 text-3xl font-semibold text-slate-900">{attendanceCounts.leave ?? 0}</p>
+            </div>
+            <div className="card p-6">
+              <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Overdue leaves</p>
+              <p className="mt-4 text-3xl font-semibold text-slate-900">{leaveSummary.overdueLeaves}</p>
+            </div>
+          </>
+        )}
+      </section>
+
       <section>
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Today's Roll-call Status</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
