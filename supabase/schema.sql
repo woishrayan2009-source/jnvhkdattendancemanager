@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- 1. SCHOOLS  (multi-tenancy anchor)
 -- ============================================================
-CREATE TABLE public.schools (
+CREATE TABLE IF NOT EXISTS public.schools (
   id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        text NOT NULL,
   code        text NOT NULL UNIQUE,           -- e.g. JNV-HKD
@@ -30,7 +30,7 @@ VALUES (
 -- ============================================================
 -- 2. HOUSES
 -- ============================================================
-CREATE TABLE public.houses (
+CREATE TABLE IF NOT EXISTS public.houses (
   id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id   uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
   name        text NOT NULL,
@@ -48,7 +48,7 @@ INSERT INTO public.houses (id, school_id, name, color) VALUES
 -- ============================================================
 -- 3. CLASSES
 -- ============================================================
-CREATE TABLE public.classes (
+CREATE TABLE IF NOT EXISTS public.classes (
   id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id   uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
   grade       int  NOT NULL CHECK (grade BETWEEN 6 AND 12),
@@ -84,7 +84,7 @@ INSERT INTO public.classes (school_id, grade, section) VALUES
 -- ============================================================
 -- 4. STUDENTS
 -- ============================================================
-CREATE TABLE public.students (
+CREATE TABLE IF NOT EXISTS public.students (
   id                uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id         uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
   house_id          uuid NOT NULL REFERENCES public.houses(id),
@@ -121,7 +121,7 @@ CREATE TRIGGER students_updated_at
 -- ============================================================
 -- 5. PROFILES  (extends auth.users)
 -- ============================================================
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id          uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   school_id   uuid NOT NULL REFERENCES public.schools(id),
   house_id    uuid REFERENCES public.houses(id),  -- null = all houses
@@ -151,7 +151,7 @@ $$;
 -- ============================================================
 -- 6. ATTENDANCE SESSIONS
 -- ============================================================
-CREATE TABLE public.attendance_sessions (
+CREATE TABLE IF NOT EXISTS public.attendance_sessions (
   id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id     uuid NOT NULL REFERENCES public.schools(id),
   house_id      uuid NOT NULL REFERENCES public.houses(id),
@@ -170,7 +170,7 @@ CREATE TABLE public.attendance_sessions (
 -- ============================================================
 -- 7. ATTENDANCE RECORDS
 -- ============================================================
-CREATE TABLE public.attendance_records (
+CREATE TABLE IF NOT EXISTS public.attendance_records (
   id                uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   session_id        uuid NOT NULL REFERENCES public.attendance_sessions(id) ON DELETE CASCADE,
   student_id        uuid NOT NULL REFERENCES public.students(id),
@@ -195,7 +195,7 @@ CREATE TABLE public.attendance_records (
 -- ============================================================
 -- 8. LEAVES  (standalone leave registry)
 -- ============================================================
-CREATE TABLE public.leaves (
+CREATE TABLE IF NOT EXISTS public.leaves (
   id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id     uuid NOT NULL REFERENCES public.schools(id),
   student_id    uuid NOT NULL REFERENCES public.students(id),
@@ -211,7 +211,7 @@ CREATE TABLE public.leaves (
 -- ============================================================
 -- 9. OFFLINE SYNC LOG  (server-side record of synced ops)
 -- ============================================================
-CREATE TABLE public.sync_log (
+CREATE TABLE IF NOT EXISTS public.sync_log (
   id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   school_id     uuid NOT NULL REFERENCES public.schools(id),
   user_id       uuid NOT NULL REFERENCES public.profiles(id),
@@ -223,15 +223,15 @@ CREATE TABLE public.sync_log (
 -- ============================================================
 -- INDEXES
 -- ============================================================
-CREATE INDEX idx_students_school_house  ON public.students(school_id, house_id);
-CREATE INDEX idx_students_school_class  ON public.students(school_id, class_id);
-CREATE INDEX idx_students_qr_token      ON public.students(qr_token);
-CREATE INDEX idx_students_active        ON public.students(is_active) WHERE is_active = true;
-CREATE INDEX idx_sessions_date_house    ON public.attendance_sessions(session_date, house_id);
-CREATE INDEX idx_records_session        ON public.attendance_records(session_id);
-CREATE INDEX idx_records_student        ON public.attendance_records(student_id);
-CREATE INDEX idx_leaves_student         ON public.leaves(student_id);
-CREATE INDEX idx_leaves_dates           ON public.leaves(from_date, to_date);
+CREATE INDEX IF NOT EXISTS idx_students_school_house  ON public.students(school_id, house_id);
+CREATE INDEX IF NOT EXISTS idx_students_school_class  ON public.students(school_id, class_id);
+CREATE INDEX IF NOT EXISTS idx_students_qr_token      ON public.students(qr_token);
+CREATE INDEX IF NOT EXISTS idx_students_active        ON public.students(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_sessions_date_house    ON public.attendance_sessions(session_date, house_id);
+CREATE INDEX IF NOT EXISTS idx_records_session        ON public.attendance_records(session_id);
+CREATE INDEX IF NOT EXISTS idx_records_student        ON public.attendance_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_leaves_student         ON public.leaves(student_id);
+CREATE INDEX IF NOT EXISTS idx_leaves_dates           ON public.leaves(from_date, to_date);
 
 -- ============================================================
 -- HELPER FUNCTION: get caller's profile
